@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { CourseDetailHeaderInfo } from "../../types";
 import { Clock, Star, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
+import { RefundConditionsButton } from "./RefundConditionsButton";
 
 const SAVED_COURSES_KEY = "mindnova_saved_courses_v1";
 
@@ -144,6 +145,7 @@ export function CourseHeader({ info }: { info?: CourseDetailHeaderInfo }) {
                 </button>
               </>
             )}
+            <RefundConditionsButton />
           </div>
         </div>
       </section>

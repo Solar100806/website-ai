@@ -288,3 +288,5 @@ Thời gian tạo quiz AI: các lượt gọi mô hình dùng chung giới hạn
 Điều kiện gửi duyệt và phát hành khóa học: phải chọn chính thức cả **Bài kiểm tra tổng quát** (`capability_assessment`) và **Bài kiểm tra cuối khóa học** (`end_of_course`), mỗi bài có ít nhất một câu hỏi. Đề chưa chọn, đề rỗng và quiz trong chương không thay thế hai bài này. Course Health báo lỗi khi thiếu; máy chủ kiểm tra lúc gửi duyệt và kiểm tra lại lúc quản trị viên phát hành, kể cả hồ sơ đã gửi trước khi áp dụng điều kiện này.
 
 Xem trước của giảng viên (`/courses/lesson?course_id=…&preview=true`) lấy thông tin và cấu trúc bản nháp qua API instructor có kiểm tra quyền sở hữu, tách khỏi bộ nhớ đệm khóa học của học viên. Video tải lên dùng URL có chữ ký của instructor. Xem bài và làm thử quiz không ghi tiến độ, không nộp/lưu kết quả học viên; tự luận cho đối chiếu đáp án mẫu và rubric, không chấm điểm AI trong preview. Khóa trống hoặc lỗi quyền truy cập được báo rõ.
+
+Course detail includes a read-only “Điều kiện hoàn tiền” popup: paid/unrefunded order, within 30 days of purchase, progress at most 10% AND at most 5 completed lessons. Opening it never submits a refund.
