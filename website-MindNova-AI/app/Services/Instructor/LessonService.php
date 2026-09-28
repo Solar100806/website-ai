@@ -328,6 +328,7 @@ class LessonService
 
         $media = LessonMedia::create([
             'lesson_id' => null,
+            'uploaded_by' => auth()->id(),
             'media_type' => $mediaType,
             'r2_key' => $filename,
             'original_filename' => $file->getClientOriginalName(),

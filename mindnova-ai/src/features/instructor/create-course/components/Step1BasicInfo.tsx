@@ -100,8 +100,9 @@ export function Step1BasicInfo({ data, onChange, errors = {} }: Step1BasicInfoPr
 
  try {
  const data = await uploadTempMedia({ file });
- // Assuming data returns { id, url, ... }
- onChange("thumbnailMediaId", data.data.id);
+ if (!data?.media_id || !data?.url) throw new Error("Invalid media upload response");
+ onChange("thumbnailMediaId", data.media_id);
+ onChange("thumbnailPreview", data.url);
  } catch (error) {
  toast.error("Lỗi khi tải ảnh lên. Vui lòng thử lại.");
  onChange("thumbnailMediaId", null);
@@ -131,9 +132,9 @@ export function Step1BasicInfo({ data, onChange, errors = {} }: Step1BasicInfoPr
  {/* Left column: Thumbnail + AI tip */}
  <div className="flex flex-col gap-4">
  <div>
- <label className="text-sm font-semibold text-slate-900">Ảnh bìa khóa học</label>
+ <label className="text-sm font-semibold text-slate-900">Ảnh bìa khóa học (không bắt buộc)</label>
  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
- Tải lên hình ảnh đại diện tỷ lệ 4:3 hấp dẫn để thu hút học viên trên sàn MindNova.
+ Bạn có thể thêm ảnh bìa tỷ lệ 4:3 ngay hoặc bổ sung sau khi tạo khóa học.
  </p>
  </div>
 

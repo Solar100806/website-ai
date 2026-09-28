@@ -19,7 +19,7 @@ class CourseWizardRequest extends FormRequest
             'category_id' => 'required_without:other_category_name|nullable|exists:categories,id',
             'other_category_name' => 'required_without:category_id|nullable|string|min:2|max:100',
             'level' => 'required|in:beginner,intermediate,advanced,all',
-            'thumbnail_media_id' => 'required|exists:lesson_media,id',
+            'thumbnail_media_id' => 'nullable|exists:lesson_media,id',
             
             'price' => 'required|numeric|min:0|max:100000000',
             'partnership_tier' => 'required|in:standard,exclusive',

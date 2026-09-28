@@ -129,10 +129,6 @@ export function CreateCourseContainer() {
  newErrors.description = "Mô tả khóa học phải chứa ít nhất 30 ký tự.";
  isValid = false;
  }
- if (!courseInfo.thumbnailMediaId && !courseInfo.thumbnailPreview) {
- toast.error("Vui lòng tải lên ảnh bìa khóa học.");
- isValid = false;
- }
  if (courseInfo.field === OTHER_CATEGORY_VALUE && !courseInfo.otherName?.trim()) {
  newErrors.otherName = "Vui lòng nhập tên lĩnh vực.";
  isValid = false;
@@ -181,9 +177,6 @@ export function CreateCourseContainer() {
  setIsPublishing(true);
 
  try {
- if (!courseInfo.thumbnailFile && !courseInfo.thumbnailPreview) {
- throw new Error("Vui lòng tải lên ảnh bìa khóa học.");
- }
 
  let categoryId = courseInfo.categoryId;
  if (courseInfo.field === OTHER_CATEGORY_VALUE || !categoryId) {

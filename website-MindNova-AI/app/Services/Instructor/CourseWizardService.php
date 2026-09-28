@@ -11,6 +11,7 @@ use App\Services\Instructor\LessonService;
 use App\Services\Instructor\QuizService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -64,8 +65,8 @@ class CourseWizardService
                         ->first();
                         
                     if ($media) {
-                        $course->update(['thumbnail' => $media->url]);
-                        $media->update(['is_temp' => false, 'course_id' => $course->id]);
+                        $course->update(['thumbnail' => Storage::disk('r2')->url($media->r2_key)]);
+                        $media->update(['is_temp' => false]);
                     } else {
                         throw new Exception("Media tạm không hợp lệ hoặc không thuộc về bạn.");
                     }
