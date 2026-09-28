@@ -1,9 +1,12 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useId, useRef, useState } from "react";
 import { BadgeInfo, X } from "lucide-react";
+import { StudentRefundModal } from "../StudentRefundModal";
 
-export function RefundConditionsButton() {
+export function RefundConditionsButton({ courseId, courseTitle, isEnrolled }: { courseId?: string | number; courseTitle?: string; isEnrolled: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -12,7 +15,7 @@ export function RefundConditionsButton() {
       <button
         type="button"
         aria-haspopup="dialog"
-        onClick={() => dialogRef.current?.showModal()}
+        onClick={() => { setHasOpened(true); setIsOpen(true); dialogRef.current?.showModal(); }}
         className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
       >
         <BadgeInfo size={16} aria-hidden="true" />
@@ -20,6 +23,7 @@ export function RefundConditionsButton() {
       </button>
       <dialog
         ref={dialogRef}
+        onClose={() => setIsOpen(false)}
         aria-labelledby={titleId}
         onClick={(event) => {
           if (event.target === event.currentTarget) dialogRef.current?.close();
@@ -39,8 +43,11 @@ export function RefundConditionsButton() {
             <li>Gửi yêu cầu trong vòng <strong>30 ngày kể từ ngày mua</strong>.</li>
             <li>Tiến độ học tập <strong>không quá 10%</strong> và số bài đã hoàn thành <strong>không quá 5 bài</strong>.</li>
           </ul>
-          <p className="mt-5 rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-900">Để gửi yêu cầu, vào mục Thanh toán, chọn giao dịch mua khóa học và nhấn Hoàn tiền. Bạn cần có tài khoản nhận hoàn tiền đã lưu và xác nhận tài khoản đó.</p>
-          <p className="mt-3 text-xs leading-5 text-slate-500">Đây là thông tin chính sách. Điều kiện của đơn hàng được kiểm tra khi bạn gửi yêu cầu hoàn tiền.</p>
+          {hasOpened && isEnrolled && courseId ? (
+            <StudentRefundModal isOpen={isOpen} embedded courseId={courseId} courseTitle={courseTitle} onClose={() => dialogRef.current?.close()} />
+          ) : (
+            <p className="mt-5 rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-900">Sau khi mua khóa học, bạn có thể kiểm tra điều kiện và gửi yêu cầu hoàn tiền ngay tại đây.</p>
+          )}
           <button type="button" onClick={() => dialogRef.current?.close()} className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">Đã hiểu</button>
         </div>
       </dialog>

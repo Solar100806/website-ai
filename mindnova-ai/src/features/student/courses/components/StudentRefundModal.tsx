@@ -15,6 +15,7 @@ interface StudentRefundModalProps {
   courseId: string | number;
   courseTitle?: string;
   onSuccess?: () => void;
+  embedded?: boolean;
 }
 
 export function StudentRefundModal({
@@ -23,6 +24,7 @@ export function StudentRefundModal({
   courseId,
   courseTitle,
   onSuccess,
+  embedded = false,
 }: StudentRefundModalProps) {
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("Nội dung không phù hợp với nhu cầu");
@@ -30,7 +32,7 @@ export function StudentRefundModal({
   const [isError, setIsError] = useState(false);
   const [savedMethodId, setSavedMethodId] = useState<number | null>(null);
   const [confirmAccount, setConfirmAccount] = useState(false);
-  const { data: savedMethods = [] } = useGetPaymentMethods();
+  const { data: savedMethods = [], isLoading: methodsLoading, isError: methodsError, refetch: refetchMethods } = useGetPaymentMethods();
 
   useEffect(() => {
     const preferred = savedMethods.find((method) => method.is_default) ?? savedMethods[0];
@@ -40,18 +42,23 @@ export function StudentRefundModal({
   }, [savedMethods, savedMethodId]);
 
   // Fetch refund eligibility from backend
-  const { data: eligibility, isLoading } = useQuery({
+  const { data: eligibility, isLoading, isFetching, isError: eligibilityError, refetch } = useQuery({
     queryKey: ["studentRefundEligibility", String(courseId)],
     queryFn: async () => {
       const res = await axiosClient.get(`/api/student/courses/${courseId}/refund-eligibility`);
       return res.data?.data;
     },
     enabled: isOpen && !!courseId,
+    staleTime: 0,
+    retry: false,
   });
 
   // Refund mutation
   const refundMutation = useMutation({
     mutationFn: async () => {
+      if (!eligibility?.is_eligible || isFetching || methodsLoading || methodsError || !savedMethods.some((method) => method.id === savedMethodId)) {
+        throw new Error("Vui lòng kiểm tra điều kiện và chọn tài khoản nhận hoàn tiền.");
+      }
       if (savedMethods.length > 0) {
         if (!savedMethodId) {
           throw new Error("Vui lòng chọn tài khoản nhận hoàn tiền.");
@@ -71,6 +78,7 @@ export function StudentRefundModal({
       setIsError(false);
       setStatusMsg(res.message || "Hoàn tiền thành công!");
       queryClient.invalidateQueries({ queryKey: ["student"] });
+      queryClient.invalidateQueries({ queryKey: ["studentRefundEligibility"] });
       if (onSuccess) onSuccess();
       setTimeout(() => {
         onClose();
@@ -84,15 +92,22 @@ export function StudentRefundModal({
     },
   });
 
+  useEffect(() => {
+    if (!isOpen && !refundMutation.isPending && !refundMutation.isSuccess) {
+      setConfirmAccount(false);
+      setStatusMsg(null);
+    }
+  }, [isOpen, refundMutation.isPending, refundMutation.isSuccess]);
+
   if (!isOpen) return null;
 
-  const isEligible = eligibility?.is_eligible ?? false;
+  const isEligible = !eligibilityError && !isFetching && eligibility?.is_eligible === true;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn font-sans">
+    <div className={embedded ? "mt-5 font-sans" : "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn font-sans"}>
       <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col animate-scaleIn">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-white">
+        {!embedded && <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-white">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-11 h-11 bg-blue-50 rounded-xl text-blue-500">
               <Banknote size={20} strokeWidth={2.5} />
@@ -110,10 +125,10 @@ export function StudentRefundModal({
           >
             <X size={18} strokeWidth={2.5} />
           </button>
-        </div>
+        </div>}
 
         {/* Content Body */}
-        <div className="p-6 flex flex-col gap-6 max-h-[75vh] overflow-y-auto bg-slate-50">
+        <div className={embedded ? "p-3 sm:p-4 flex flex-col gap-4 bg-slate-50" : "p-6 flex flex-col gap-6 max-h-[75vh] overflow-y-auto bg-slate-50"}>
           {/* Course Summary Box */}
           <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Khóa học yêu cầu hoàn</span>
@@ -129,8 +144,13 @@ export function StudentRefundModal({
           <div className="flex flex-col gap-4 p-5 rounded-xl bg-white border border-slate-200 shadow-sm">
             <h5 className="text-[13px] font-semibold text-slate-900">Kiểm tra điều kiện hoàn tiền</h5>
 
-            {isLoading ? (
+            {isLoading || isFetching ? (
               <p className="text-[13px] font-medium text-slate-500 text-center py-4">Đang kiểm tra dữ liệu học tập...</p>
+            ) : eligibilityError ? (
+              <div role="alert" className="text-sm text-rose-600">
+                Không thể kiểm tra điều kiện hoàn tiền. Vui lòng thử lại.
+                <button type="button" onClick={() => refetch()} className="ml-2 font-semibold underline">Thử lại</button>
+              </div>
             ) : (
               <div className="flex flex-col gap-4">
                 {/* Rule 1: Within 30 days */}
@@ -165,7 +185,7 @@ export function StudentRefundModal({
           </div>
 
           {/* Status Message */}
-          {!isLoading && (
+          {!isLoading && !isFetching && !eligibilityError && (
             <div>
               {isEligible ? (
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-500/20 flex flex-col gap-1.5 shadow-sm">
@@ -184,7 +204,7 @@ export function StudentRefundModal({
                     <span>Không đủ điều kiện hoàn tiền</span>
                   </div>
                   <ul className="list-disc list-inside text-[13px] font-medium text-[#B91C1C] flex flex-col gap-1 ml-1">
-                    {eligibility?.reasons?.map((r: string, idx: number) => (
+                    {(eligibility?.reasons?.length ? eligibility.reasons : [eligibility?.reason || "Vui lòng kiểm tra lại tiến độ hoặc thời hạn bảo hộ."]).map((r: string, idx: number) => (
                       <li key={idx}>{r}</li>
                     )) || <li>Vui lòng kiểm tra lại tiến độ hoặc thời hạn bảo hộ.</li>}
                   </ul>
@@ -205,7 +225,7 @@ export function StudentRefundModal({
                     </div>
                     <input
                       type="radio"
-                      className="hidden"
+                      className="sr-only"
                       checked={savedMethodId === method.id}
                       onChange={() => { setSavedMethodId(method.id); setConfirmAccount(false); }}
                     />
@@ -218,13 +238,15 @@ export function StudentRefundModal({
                 <div className={`w-[18px] h-[18px] rounded-md border flex items-center justify-center shrink-0 transition-colors ${confirmAccount ? "bg-blue-500 border-blue-500" : "border-slate-300 group-hover:border-slate-400 bg-white"}`}>
                   {confirmAccount && <Check size={12} strokeWidth={4} className="text-white" />}
                 </div>
-                <input type="checkbox" className="hidden" checked={confirmAccount} onChange={(e) => setConfirmAccount(e.target.checked)} />
+                <input type="checkbox" className="sr-only" checked={confirmAccount} onChange={(e) => setConfirmAccount(e.target.checked)} />
                 <span className="text-[13px] font-medium text-[#334155] group-hover:text-slate-900 transition-colors">Tôi xác nhận hoàn tiền về tài khoản này</span>
               </label>
             </div>
           )}
-          {isEligible && savedMethods.length === 0 && (
-            <p className="text-[13px] text-blue-500 font-medium bg-blue-50 p-4 rounded-xl border border-blue-500/20">Hãy thêm tài khoản thanh toán trong thẻ Thanh Toán &amp; Hóa Đơn trước khi hoàn tiền.</p>
+          {isEligible && methodsLoading && <p role="status">Đang tải tài khoản nhận tiền...</p>}
+          {isEligible && methodsError && <p role="alert">Không thể tải tài khoản nhận tiền. <button type="button" onClick={() => refetchMethods()} className="font-semibold underline">Thử tải lại tài khoản</button></p>}
+          {isEligible && !methodsLoading && !methodsError && savedMethods.length === 0 && (
+            <p className="text-[13px] text-blue-500 font-medium bg-blue-50 p-4 rounded-xl border border-blue-500/20"><a href="/billing" className="underline">Thêm tài khoản nhận tiền</a> trước khi hoàn tiền.</p>
           )}
 
           {/* Reason Select */}
@@ -265,7 +287,7 @@ export function StudentRefundModal({
             <button
               type="button"
               onClick={() => refundMutation.mutate()}
-              disabled={refundMutation.isPending || (savedMethods.length === 0)}
+              disabled={refundMutation.isPending || refundMutation.isSuccess || methodsLoading || methodsError || !savedMethods.some((method) => method.id === savedMethodId) || !confirmAccount}
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white text-[13px] font-semibold shadow-md shadow-blue-500/20 hover:opacity-95 transition-all disabled:from-slate-400 disabled:to-slate-300 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {refundMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}

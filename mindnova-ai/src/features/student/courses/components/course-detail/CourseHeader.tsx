@@ -145,7 +145,7 @@ export function CourseHeader({ info }: { info?: CourseDetailHeaderInfo }) {
                 </button>
               </>
             )}
-            <RefundConditionsButton />
+            <RefundConditionsButton courseId={info?.id} courseTitle={title} isEnrolled={isEnrolled} />
           </div>
         </div>
       </section>
